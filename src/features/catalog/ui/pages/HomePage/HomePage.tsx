@@ -7,7 +7,7 @@
  * For now it uses local mock data; later it will fetch data through a use-case.
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, JSX } from "react";
 import { Container, SearchInput, CounterBadge } from "@/app/ui/components";
 import type { HomePageProps, PodcastCard } from "./types";
 import { mockPodcasts } from "./mockPodcasts";
@@ -19,7 +19,9 @@ import "./HomePage.css";
  * @param {HomePageProps} props - Optional initial data for testing or SSR.
  * @returns {JSX.Element} Home page component.
  */
-export function HomePage({ initialData = mockPodcasts }: HomePageProps) {
+export function HomePage({
+  initialData = mockPodcasts,
+}: HomePageProps): JSX.Element {
   const [query, setQuery] = useState("");
 
   /** Filter podcasts by title or author (case-insensitive). */

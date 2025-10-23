@@ -1,2 +1,63 @@
-// src/features/catalog/ui/pages/EpisodeDetailPage/EpisodeDetailPage.css
+/* src/features/catalog/ui/pages/EpisodeDetailPage/EpisodeDetailPage.css */
 
+.episode-detail__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.episode-detail__title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.episode-detail__content {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1.5rem;
+}
+
+.episode-detail__sidebar {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 1rem;
+}
+
+.episode-detail__cover {
+  width: 100%;
+  aspect-ratio: 1/1;
+  background: #f5f5f5;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+.episode-detail__meta p {
+  margin: 0.25rem 0;
+}
+
+.episode-detail__main {
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 1rem;
+  background: #fff;
+}
+
+.episode-detail__episode-title {
+  margin-top: 0;
+}
+
+.episode-detail__description {
+  color: #555;
+  margin: 0.5rem 0 1rem;
+}
+
+.episode-detail__player {
+  border-top: 1px dashed #e5e5e5;
+  padding-top: 0.75rem;
+}
+
+.episode-detail__id {
+  color: #666;
+  margin-top: 0.75rem;
+}

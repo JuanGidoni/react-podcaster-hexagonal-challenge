@@ -23,6 +23,7 @@ import { PodcastId } from "../../domain/valueObjects/PodcastId";
 import { EpisodeId } from "../../domain/valueObjects/EpisodeId";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const EPISODE_LIMIT = 20;
 
 export interface RestPodcastRepositoryOptions {
   /** Base cache key prefix (default: 'podcaster:') */
@@ -145,16 +146,19 @@ export class RestPodcastRepository implements PodcastRepository {
         url: "https://itunes.apple.com/us/rss/toppodcasts/limit=100/genre=1310/json",
       });
       const entries: any[] = data?.feed?.entry ?? [];
-      return entries.map(normalizeTopEntry).map(
-        (e) =>
-          new Podcast({
-            id: new PodcastId(e.id),
-            title: e.title,
-            author: e.author,
-            image: e.image,
-            summary: e.summary,
-          })
-      );
+      return entries
+        .map(normalizeTopEntry)
+        .filter((e) => e.id && e.title && e.author && e.image)
+        .map(
+          (e) =>
+            new Podcast({
+              id: new PodcastId(e.id),
+              title: e.title,
+              author: e.author,
+              image: e.image,
+              summary: e.summary,
+            })
+        );
     };
     return withTTL(this.cache, key, this.ttlMs, load)();
   }
@@ -163,7 +167,7 @@ export class RestPodcastRepository implements PodcastRepository {
     const key = `${this.cachePrefix}podcast:${podcastId.toString()}:detail`;
     const load = async () => {
       const { data } = await this.http.request<any>({
-        url: `https://itunes.apple.com/lookup?id=${encodeURIComponent(podcastId.toString())}&media=podcast&entity=podcastEpisode&limit=200`,
+        url: `https://itunes.apple.com/lookup?id=${encodeURIComponent(podcastId.toString())}&media=podcast&entity=podcastEpisode&limit=${EPISODE_LIMIT}`,
       });
       const { podcast } = normalizeLookup(data?.results ?? []);
       if (!podcast?.id) return null;
@@ -182,11 +186,12 @@ export class RestPodcastRepository implements PodcastRepository {
     const key = `${this.cachePrefix}podcast:${podcastId.toString()}:episodes`;
     const load = async () => {
       const { data } = await this.http.request<any>({
-        url: `https://itunes.apple.com/lookup?id=${encodeURIComponent(podcastId.toString())}&media=podcast&entity=podcastEpisode&limit=200`,
+        url: `https://itunes.apple.com/lookup?id=${encodeURIComponent(podcastId.toString())}&media=podcast&entity=podcastEpisode&limit=${EPISODE_LIMIT}`,
       });
       const { episodes } = normalizeLookup(data?.results ?? []);
       return episodes
-        .filter((e) => e.podcastId && e.id)
+        .filter((e) => e.podcastId && e.id && e.title && e.publishDateISO)
+        .slice(0, EPISODE_LIMIT)
         .map(
           (e) =>
             new Episode({

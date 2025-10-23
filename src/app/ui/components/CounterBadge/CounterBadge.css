@@ -1,0 +1,13 @@
+.counter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+}

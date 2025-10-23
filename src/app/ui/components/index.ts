@@ -3,3 +3,4 @@ export * from "./CounterBadge";
 export * from "./Header";
 export * from "./LoadingSpinner";
 export * from "./SearchInput";
+export * from "./ItemsIndicator";

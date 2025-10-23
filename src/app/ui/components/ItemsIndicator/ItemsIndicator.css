@@ -1,0 +1,13 @@
+/* src/app/ui/components/ItemsIndicator/ItemsIndicator.css */
+
+.items-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.items-indicator__label {
+  color: #333;
+  font-size: 0.9rem;
+  line-height: 1;
+}

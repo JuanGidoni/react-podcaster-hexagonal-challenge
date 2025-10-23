@@ -3,9 +3,9 @@
 /**
  * @file Mock data for the HomePage.
  */
-import { PodcastCard } from "./types";
+import type { CatalogPodcast } from "./types";
 
-export const mockPodcasts: PodcastCard[] = [
+export const mockPodcasts: CatalogPodcast[] = [
   {
     id: "1",
     title: "Frontend Talks",

@@ -7,8 +7,9 @@
 
 /**
  * Represents a podcast item displayed in the catalog list.
+ * (Renamed to avoid clashing with the UI component name `PodcastCard`.)
  */
-export interface PodcastCard {
+export interface CatalogPodcast {
   id: string;
   title: string;
   author: string;
@@ -18,8 +19,8 @@ export interface PodcastCard {
 /**
  * Props for the HomePage component.
  *
- * @property {PodcastCard[]} [initialData] - Optional list of podcasts (for testing or SSR).
+ * @property {CatalogPodcast[]} [initialData] - Optional list for testing/SSR.
  */
 export interface HomePageProps {
-  initialData?: PodcastCard[];
+  initialData?: CatalogPodcast[];
 }

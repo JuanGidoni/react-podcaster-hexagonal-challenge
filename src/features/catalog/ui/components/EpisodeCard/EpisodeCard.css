@@ -1,2 +1,36 @@
-// src/features/catalog/ui/components/EpisodeCard/EpisodeCard.css
+/* src/features/catalog/ui/components/EpisodeCard/EpisodeCard.css */
 
+.episode-card {
+  display: grid;
+  grid-template-columns: 1fr 120px 90px;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+}
+
+.episode-card:hover {
+  background: #fafafa;
+}
+
+.episode-card__title {
+  font-weight: 600;
+  color: #111;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.episode-card__date {
+  color: #555;
+  font-size: 0.9rem;
+}
+.episode-card__duration {
+  color: #333;
+  font-variant-numeric: tabular-nums;
+}

@@ -28,7 +28,6 @@ export class Episode {
   constructor(props: EpisodeProps) {
     if (!props.title?.trim()) throw new Error("EpisodeTitleEmpty");
     if (!props.publishDateISO?.trim()) throw new Error("EpisodeDateEmpty");
-    // Basic date validation (entity-level, not parsing-heavy)
     if (isNaN(new Date(props.publishDateISO).getTime())) {
       throw new Error("EpisodeDateInvalid");
     }
@@ -68,4 +67,29 @@ export class Episode {
       audioUrl: this.audioUrl,
     };
   }
+}
+
+export interface UiEpisode {
+  id: string;
+  podcastId: string;
+  title: string;
+  publishDateISO: string;
+  durationMs?: number;
+}
+
+export interface PodcastDTO {
+  id: string;
+  title: string;
+  author: string;
+  image: string;
+  summary?: string;
+}
+export interface EpisodeDTO {
+  id: string;
+  podcastId: string;
+  title: string;
+  publishDateISO: string;
+  durationMs?: number;
+  descriptionHTML?: string;
+  audioUrl?: string;
 }

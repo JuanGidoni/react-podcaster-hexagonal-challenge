@@ -16,6 +16,7 @@ import { Container, LoadingSpinner } from "@/app/ui/components";
 import { useCases } from "@/core/di/container";
 import { sanitizeHtml } from "@/core/utils/sanitizeHtml";
 import "./EpisodeDetailPage.css";
+import { toEpisodeDTO, toPodcastDTO } from "@/core/utils/normalizers";
 
 type UiPodcast = {
   id: string;
@@ -40,29 +41,51 @@ export function EpisodeDetailPage(): JSX.Element {
   const [podcast, setPodcast] = useState<UiPodcast | null>(null);
   const [episodes, setEpisodes] = useState<UiEpisode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null); // overall error
+  const [episodesError, setEpisodesError] = useState<string | null>(null); // episodes-only error
 
   useEffect(() => {
     let alive = true;
-    async function load() {
-      try {
-        setLoading(true);
-        setError(null);
-        const [meta, eps] = await Promise.all([
-          useCases.getPodcastDetail.execute(podcastId),
-          useCases.getPodcastEpisodes.execute(podcastId),
-        ]);
-        if (!alive) return;
-        setPodcast(meta ? meta.toJSON() : null);
-        setEpisodes(eps.map((e) => e.toJSON() as UiEpisode));
-      } catch {
-        if (!alive) return;
-        setError("Failed to load episode data.");
-      } finally {
-        if (alive) setLoading(false);
+    (async () => {
+      setLoading(true);
+      setError(null);
+      setEpisodesError(null);
+      const [metaRes, epsRes] = await Promise.allSettled([
+        useCases.getPodcastDetail.execute(podcastId),
+        useCases.getPodcastEpisodes.execute(podcastId),
+      ]);
+
+      if (!alive) return;
+
+      // Meta result
+      if (metaRes.status === "fulfilled") {
+        setPodcast(metaRes.value ? toPodcastDTO(metaRes.value) : null);
+      } else {
+        console.error("Podcast meta load failed:", metaRes.reason);
+        setError(
+          metaRes.reason instanceof Error
+            ? metaRes.reason.message
+            : "Failed to load podcast meta."
+        );
       }
-    }
-    load();
+
+      // Episodes result
+      if (epsRes.status === "fulfilled") {
+        setEpisodes(
+          epsRes.value.map(toEpisodeDTO).filter(Boolean) as UiEpisode[]
+        );
+      } else {
+        console.error("Episodes load failed:", epsRes.reason);
+        setEpisodesError(
+          epsRes.reason instanceof Error
+            ? epsRes.reason.message
+            : "Failed to load episodes."
+        );
+      }
+
+      setLoading(false);
+    })();
+
     return () => {
       alive = false;
     };
@@ -82,13 +105,13 @@ export function EpisodeDetailPage(): JSX.Element {
     <Container as="section" className="episode-detail">
       <header className="episode-detail__header">
         <h2 className="episode-detail__title">
-          {episode?.title ?? "Episode Detail"}
+          {episode?.title ?? podcast?.title ?? "Episode Detail"}
         </h2>
       </header>
 
       {error && (
         <div role="alert" className="episode-detail__error">
-          {error}
+          {error} &nbsp;<a href="/error">Details</a>
         </div>
       )}
 
@@ -121,26 +144,38 @@ export function EpisodeDetailPage(): JSX.Element {
             <div className="episode-detail__loading">
               <LoadingSpinner ariaLabel="Loading episode" />
             </div>
-          ) : episode ? (
+          ) : (
             <>
-              <h3 className="episode-detail__episode-title">{episode.title}</h3>
-              <div
-                className="episode-detail__description"
-                // Safe, sanitized HTML
-                dangerouslySetInnerHTML={{ __html: safeDescription }}
-              />
-              {episode.audioUrl ? (
-                <div className="episode-detail__player">
-                  <audio controls preload="none" src={episode.audioUrl}>
-                    Your browser does not support the audio element.
-                  </audio>
+              {episodesError && (
+                <div role="status" className="episode-detail__error">
+                  Episodes: {episodesError}
                 </div>
+              )}
+              {episode ? (
+                <>
+                  <h3 className="episode-detail__episode-title">
+                    {episode.title}
+                  </h3>
+                  <div
+                    className="episode-detail__description"
+                    dangerouslySetInnerHTML={{ __html: safeDescription }}
+                  />
+                  {episode.audioUrl ? (
+                    <div className="episode-detail__player">
+                      <audio controls preload="none" src={episode.audioUrl}>
+                        Your browser does not support the audio element.
+                      </audio>
+                    </div>
+                  ) : (
+                    <p className="episode-detail__no-audio">
+                      No audio available.
+                    </p>
+                  )}
+                </>
               ) : (
-                <p className="episode-detail__no-audio">No audio available.</p>
+                <p>Episode not found.</p>
               )}
             </>
-          ) : (
-            <p>Episode not found.</p>
           )}
         </article>
       </div>

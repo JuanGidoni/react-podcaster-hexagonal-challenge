@@ -35,13 +35,11 @@ export function sanitizeHtml(input: string): string {
   while (walker.nextNode()) {
     const el = walker.currentNode as Element;
     if (!allowedTags.has(el.tagName)) {
-      // Replace unknown tag with its text content (flatten)
       const span = doc.createTextNode(el.textContent ?? "");
       el.replaceWith(span);
       continue;
     }
 
-    // Clean attributes
     for (const attr of Array.from(el.attributes)) {
       if (!allowedAttrs.has(attr.name)) {
         el.removeAttribute(attr.name);
@@ -52,7 +50,6 @@ export function sanitizeHtml(input: string): string {
         const safe = /^https?:\/\//i.test(val) || /^mailto:/i.test(val);
         if (!safe) el.removeAttribute("href");
         else {
-          // security hardening
           el.setAttribute("rel", "noopener noreferrer");
           el.setAttribute("target", "_blank");
         }

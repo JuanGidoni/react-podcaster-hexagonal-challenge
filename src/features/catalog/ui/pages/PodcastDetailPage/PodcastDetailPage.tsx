@@ -15,21 +15,9 @@ import { Container, ItemsIndicator, LoadingSpinner } from "@/app/ui/components";
 import { EpisodeCard } from "@/features/catalog/ui/components";
 import { useCases } from "@/core/di/container";
 import "./PodcastDetailPage.css";
-
-type UiPodcast = {
-  id: string;
-  title: string;
-  author: string;
-  image: string;
-  summary?: string;
-};
-type UiEpisode = {
-  id: string;
-  podcastId: string;
-  title: string;
-  publishDateISO: string;
-  durationMs?: number;
-};
+import { UiPodcast } from "@/features/catalog/domain/entities/Podcast";
+import { UiEpisode } from "@/features/catalog/domain/entities/Episode";
+import { toEpisodeDTO, toPodcastDTO } from "@/core/utils/normalizers";
 
 export function PodcastDetailPage(): JSX.Element {
   const { podcastId = "" } = useParams();
@@ -38,29 +26,53 @@ export function PodcastDetailPage(): JSX.Element {
   const [podcast, setPodcast] = useState<UiPodcast | null>(null);
   const [episodes, setEpisodes] = useState<UiEpisode[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  const [metaError, setMetaError] = useState<string | null>(null);
+  const [episodesError, setEpisodesError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
-    async function load() {
-      try {
-        setLoading(true);
-        setError(null);
-        const [meta, eps] = await Promise.all([
-          useCases.getPodcastDetail.execute(podcastId),
-          useCases.getPodcastEpisodes.execute(podcastId),
-        ]);
-        if (!alive) return;
-        setPodcast(meta ? meta.toJSON() : null);
-        setEpisodes(eps.map((e) => e.toJSON() as UiEpisode));
-      } catch (e) {
-        if (!alive) return;
-        setError("Failed to load podcast data.");
-      } finally {
-        if (alive) setLoading(false);
+    (async () => {
+      setLoading(true);
+      setMetaError(null);
+      setEpisodesError(null);
+
+      const [metaRes, epsRes] = await Promise.allSettled([
+        useCases.getPodcastDetail.execute(podcastId),
+        useCases.getPodcastEpisodes.execute(podcastId),
+      ]);
+
+      if (!alive) return;
+
+      if (metaRes.status === "fulfilled") {
+        setPodcast(toPodcastDTO(metaRes.value));
+      } else {
+        console.error("Podcast meta load failed:", metaRes.reason);
+        setMetaError(
+          metaRes.reason instanceof Error
+            ? metaRes.reason.message
+            : "Failed to load podcast data."
+        );
       }
-    }
-    load();
+
+      if (epsRes.status === "fulfilled") {
+        const list = (epsRes.value as any[])
+          .map(toEpisodeDTO)
+          .filter(Boolean) as UiEpisode[];
+        list.sort((a, b) => (a.publishDateISO > b.publishDateISO ? -1 : 1));
+        setEpisodes(list);
+      } else {
+        console.error("Episodes load failed:", epsRes.reason);
+        setEpisodesError(
+          epsRes.reason instanceof Error
+            ? epsRes.reason.message
+            : "Failed to load episodes."
+        );
+      }
+
+      setLoading(false);
+    })();
+
     return () => {
       alive = false;
     };
@@ -68,14 +80,7 @@ export function PodcastDetailPage(): JSX.Element {
 
   const title = podcast?.title ?? "Podcast Detail";
   const count = episodes.length;
-
-  const sortedEpisodes = useMemo(
-    () =>
-      [...episodes].sort((a, b) =>
-        a.publishDateISO > b.publishDateISO ? -1 : 1
-      ),
-    [episodes]
-  );
+  const showNoEpisodes = !loading && !episodesError && count === 0;
 
   return (
     <Container as="section" className="podcast-detail">
@@ -88,9 +93,9 @@ export function PodcastDetailPage(): JSX.Element {
         )}
       </header>
 
-      {error && (
+      {metaError && !podcast && (
         <div role="alert" className="podcast-detail__error">
-          {error}
+          {metaError} &nbsp;<a href="/error">Details</a>
         </div>
       )}
 
@@ -130,11 +135,17 @@ export function PodcastDetailPage(): JSX.Element {
             </div>
           ) : (
             <div className="podcast-detail__episodes">
-              {sortedEpisodes.length === 0 ? (
+              {episodesError && (
+                <div role="alert" className="podcast-detail__error">
+                  {episodesError} &nbsp;<a href="/error">Details</a>
+                </div>
+              )}
+
+              {showNoEpisodes ? (
                 <p>No episodes found.</p>
               ) : (
                 <ul className="podcast-detail__episodes-list">
-                  {sortedEpisodes.map((ep) => (
+                  {episodes.map((ep) => (
                     <li key={ep.id}>
                       <EpisodeCard
                         id={ep.id}

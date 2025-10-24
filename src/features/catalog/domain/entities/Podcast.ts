@@ -53,3 +53,10 @@ export class Podcast {
     };
   }
 }
+export interface UiPodcast {
+  id: string;
+  title: string;
+  author: string;
+  image: string;
+  summary?: string;
+}

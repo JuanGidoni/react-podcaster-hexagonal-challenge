@@ -1,4 +1,4 @@
-# React Podcaster — Hexagonal Challenge (GTF × Inditex)
+# React Podcaster — Hexagonal Challenge
 
 A from-scratch React + TypeScript app configured with Webpack (no CRA, no Vite), applying Hexagonal Architecture in the frontend.
 It lists top podcasts, shows podcast detail, episode list, and an episode page with an inline audio player.

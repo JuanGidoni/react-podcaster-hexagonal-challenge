@@ -18,6 +18,7 @@ import "./PodcastDetailPage.css";
 import { UiPodcast } from "@/features/catalog/domain/entities/Podcast";
 import { UiEpisode } from "@/features/catalog/domain/entities/Episode";
 import { toEpisodeDTO, toPodcastDTO } from "@/core/utils/normalizers";
+import { useAppLoading } from "@/app/context/AppLoadingContext";
 
 export function PodcastDetailPage(): JSX.Element {
   const { podcastId = "" } = useParams();
@@ -25,17 +26,12 @@ export function PodcastDetailPage(): JSX.Element {
 
   const [podcast, setPodcast] = useState<UiPodcast | null>(null);
   const [episodes, setEpisodes] = useState<UiEpisode[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const [metaError, setMetaError] = useState<string | null>(null);
-  const [episodesError, setEpisodesError] = useState<string | null>(null);
+  const { loading, setLoading } = useAppLoading();
 
   useEffect(() => {
     let alive = true;
     (async () => {
       setLoading(true);
-      setMetaError(null);
-      setEpisodesError(null);
 
       const [metaRes, epsRes] = await Promise.allSettled([
         useCases.getPodcastDetail.execute(podcastId),
@@ -48,11 +44,6 @@ export function PodcastDetailPage(): JSX.Element {
         setPodcast(toPodcastDTO(metaRes.value));
       } else {
         console.error("Podcast meta load failed:", metaRes.reason);
-        setMetaError(
-          metaRes.reason instanceof Error
-            ? metaRes.reason.message
-            : "Failed to load podcast data."
-        );
       }
 
       if (epsRes.status === "fulfilled") {
@@ -63,11 +54,6 @@ export function PodcastDetailPage(): JSX.Element {
         setEpisodes(list);
       } else {
         console.error("Episodes load failed:", epsRes.reason);
-        setEpisodesError(
-          epsRes.reason instanceof Error
-            ? epsRes.reason.message
-            : "Failed to load episodes."
-        );
       }
 
       setLoading(false);
@@ -80,24 +66,16 @@ export function PodcastDetailPage(): JSX.Element {
 
   const title = podcast?.title ?? "Podcast Detail";
   const count = episodes.length;
-  const showNoEpisodes = !loading && !episodesError && count === 0;
+  const showNoEpisodes = !loading && count === 0;
 
   return (
     <Container as="section" className="podcast-detail">
       <header className="podcast-detail__header">
         <h2 className="podcast-detail__title">{title}</h2>
-        {loading ? (
-          <LoadingSpinner ariaLabel="Loading episodes" />
-        ) : (
+        {!loading && (
           <ItemsIndicator count={count} singular="episode" plural="episodes" />
         )}
       </header>
-
-      {metaError && !podcast && (
-        <div role="alert" className="podcast-detail__error">
-          {metaError} &nbsp;<a href="/error">Details</a>
-        </div>
-      )}
 
       <div className="podcast-detail__content">
         <aside className="podcast-detail__sidebar">
@@ -129,38 +107,24 @@ export function PodcastDetailPage(): JSX.Element {
         </aside>
 
         <section className="podcast-detail__main">
-          {loading ? (
-            <div className="podcast-detail__loading">
-              <LoadingSpinner ariaLabel="Loading episodes" />
-            </div>
+          {!loading && showNoEpisodes ? (
+            <p>No episodes found.</p>
           ) : (
-            <div className="podcast-detail__episodes">
-              {episodesError && (
-                <div role="alert" className="podcast-detail__error">
-                  {episodesError} &nbsp;<a href="/error">Details</a>
-                </div>
-              )}
-
-              {showNoEpisodes ? (
-                <p>No episodes found.</p>
-              ) : (
-                <ul className="podcast-detail__episodes-list">
-                  {episodes.map((ep) => (
-                    <li key={ep.id}>
-                      <EpisodeCard
-                        id={ep.id}
-                        title={ep.title}
-                        dateISO={ep.publishDateISO}
-                        durationMs={ep.durationMs}
-                        onSelect={() =>
-                          navigate(`/podcast/${podcastId}/episode/${ep.id}`)
-                        }
-                      />
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            <ul className="podcast-detail__episodes-list">
+              {episodes.map((ep) => (
+                <li key={ep.id}>
+                  <EpisodeCard
+                    id={ep.id}
+                    title={ep.title}
+                    dateISO={ep.publishDateISO}
+                    durationMs={ep.durationMs}
+                    onSelect={() =>
+                      navigate(`/podcast/${podcastId}/episode/${ep.id}`)
+                    }
+                  />
+                </li>
+              ))}
+            </ul>
           )}
         </section>
       </div>

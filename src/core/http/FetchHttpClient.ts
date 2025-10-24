@@ -8,6 +8,7 @@
  */
 
 import type { HttpClient, HttpRequest, HttpResponse } from "./HttpClient";
+import { eventBus, HttpEvents } from "@/core/events/EventBus";
 
 export interface FetchHttpClientOptions {
   /**
@@ -34,6 +35,7 @@ export class FetchHttpClient implements HttpClient {
   }
 
   async request<T = unknown>(req: HttpRequest): Promise<HttpResponse<T>> {
+    eventBus.publish(HttpEvents.Start);
     const controller =
       typeof AbortController !== "undefined"
         ? new AbortController()
@@ -78,16 +80,15 @@ export class FetchHttpClient implements HttpClient {
 
       let data: T | undefined;
       let text: string | undefined;
-      let error: Error | undefined;
       if (contentType.includes("application/json")) {
         data = (await res.json()) as T;
       } else {
         text = await res.text();
-        try {
-          const maybe = JSON.parse(text) as T;
-          data = maybe;
-        } catch (err) {
-          console.error(err, "Unexpected error trying to fetch");
+        const trimmed = text.trim();
+        if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+          try {
+            data = JSON.parse(trimmed) as T;
+          } catch {}
         }
       }
 
@@ -100,6 +101,7 @@ export class FetchHttpClient implements HttpClient {
       };
     } finally {
       if (id) clearTimeout(id);
+      eventBus.publish(HttpEvents.End);
     }
   }
 }

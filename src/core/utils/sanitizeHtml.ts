@@ -30,7 +30,6 @@ export function sanitizeHtml(input: string): string {
   const doc = parser.parseFromString(input, "text/html");
 
   const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ELEMENT, null);
-  const toRemove: Element[] = [];
 
   while (walker.nextNode()) {
     const el = walker.currentNode as Element;

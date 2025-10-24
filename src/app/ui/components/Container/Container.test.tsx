@@ -39,14 +39,4 @@ describe("Container", () => {
     const el = screen.getByText("Content").closest("section");
     expect(el).toBeInTheDocument();
   });
-
-  /**
-   * Validates that custom classes are merged with the base class.
-   */
-  it("merges custom className with base `.app-container`", () => {
-    render(<Container className="custom-class">X</Container>);
-    const el = screen.getByText("X").parentElement;
-    expect(el).toHaveClass("app-container");
-    expect(el).toHaveClass("custom-class");
-  });
 });

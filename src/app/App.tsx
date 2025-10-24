@@ -12,6 +12,8 @@
 import { Outlet, useNavigate, useNavigation } from "react-router-dom";
 import { Header, LoadingSpinner } from "@/app/ui/components";
 import { JSX } from "react";
+import { HeaderLoadingDot } from "./ui/components/HeaderLoadingDot/HeaderLoadingDot";
+import { AppLoadingProvider } from "./context/AppLoadingContext";
 
 /**
  * Top-level application layout.
@@ -21,19 +23,13 @@ import { JSX } from "react";
  */
 export default function App(): JSX.Element {
   const navigate = useNavigate();
-  const navigation = useNavigation();
-  const isNavigating = navigation.state !== "idle";
 
   return (
     <>
-      <Header
-        title="Podcaster"
-        onTitleClick={() => navigate("/")}
-        rightSlot={
-          isNavigating ? <LoadingSpinner ariaLabel="Navigating" /> : null
-        }
-      />
-      <Outlet />
+      <AppLoadingProvider>
+        <Header title="Podcaster" onTitleClick={() => navigate("/")} />
+        <Outlet />
+      </AppLoadingProvider>
     </>
   );
 }

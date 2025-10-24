@@ -8,12 +8,13 @@ import type { CatalogPodcast } from "./types";
 import "./HomePage.css";
 import { useCases } from "@/core/di/container";
 import { toCatalogDTO } from "@/core/utils/normalizers";
+import { useAppLoading } from "@/app/context/AppLoadingContext";
 
 export function HomePage(): JSX.Element {
   const [query, setQuery] = useState("");
   const [data, setData] = useState<CatalogPodcast[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { loading, setLoading } = useAppLoading();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -61,7 +62,6 @@ export function HomePage(): JSX.Element {
         />
       </div>
 
-      {loading && <p role="status">Loading…</p>}
       {error && (
         <p role="alert">
           {error} <a href="/error">See details</a>

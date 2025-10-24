@@ -3,6 +3,7 @@
 import { JSX } from "react";
 import "./Header.css";
 import type { HeaderProps } from "./types";
+import { HeaderLoadingDot } from "../HeaderLoadingDot/HeaderLoadingDot";
 
 /**
  * Sticky application header with a clickable title and an optional right-aligned slot.
@@ -39,6 +40,7 @@ export function Header({
           {title}
         </button>
         <div className="header__right" aria-live="polite">
+          <HeaderLoadingDot />
           {rightSlot}
         </div>
       </div>

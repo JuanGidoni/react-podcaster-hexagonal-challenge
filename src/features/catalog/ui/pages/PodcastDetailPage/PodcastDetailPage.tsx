@@ -3,58 +3,165 @@
 /**
  * @file PodcastDetailPage.tsx
  * @description
- * UI placeholder for the podcast detail view.
- * Displays a minimal layout with a heading and a counter slot (e.g., episodes).
- * Later this page will render the podcast sidebar (cover/title/author/description)
- * and an episodes table/list fetched via a use-case.
+ * Real podcast detail page:
+ *  - Fetches podcast meta and episodes via use-cases (DI container)
+ *  - Shows loading and error states
+ *  - Renders a simple episodes list using <EpisodeCard />
  */
 
-import { JSX } from "react";
-import { useParams } from "react-router-dom";
-import { Container, CounterBadge } from "@/app/ui/components";
-import type { PodcastDetailPageProps } from "./types";
+import { JSX, useEffect, useMemo, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { Container, ItemsIndicator, LoadingSpinner } from "@/app/ui/components";
+import { EpisodeCard } from "@/features/catalog/ui/components";
+import { useCases } from "@/core/di/container";
 import "./PodcastDetailPage.css";
+import { UiPodcast } from "@/features/catalog/domain/entities/Podcast";
+import { UiEpisode } from "@/features/catalog/domain/entities/Episode";
+import { toEpisodeDTO, toPodcastDTO } from "@/core/utils/normalizers";
 
-/**
- * Podcast detail page (placeholder).
- *
- * @param {PodcastDetailPageProps} _props - Reserved for future enhancements.
- * @returns {JSX.Element} Placeholder layout for podcast details.
- */
-export function PodcastDetailPage(_props: PodcastDetailPageProps): JSX.Element {
+export function PodcastDetailPage(): JSX.Element {
   const { podcastId = "" } = useParams();
+  const navigate = useNavigate();
+
+  const [podcast, setPodcast] = useState<UiPodcast | null>(null);
+  const [episodes, setEpisodes] = useState<UiEpisode[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [metaError, setMetaError] = useState<string | null>(null);
+  const [episodesError, setEpisodesError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      setLoading(true);
+      setMetaError(null);
+      setEpisodesError(null);
+
+      const [metaRes, epsRes] = await Promise.allSettled([
+        useCases.getPodcastDetail.execute(podcastId),
+        useCases.getPodcastEpisodes.execute(podcastId),
+      ]);
+
+      if (!alive) return;
+
+      if (metaRes.status === "fulfilled") {
+        setPodcast(toPodcastDTO(metaRes.value));
+      } else {
+        console.error("Podcast meta load failed:", metaRes.reason);
+        setMetaError(
+          metaRes.reason instanceof Error
+            ? metaRes.reason.message
+            : "Failed to load podcast data."
+        );
+      }
+
+      if (epsRes.status === "fulfilled") {
+        const list = (epsRes.value as any[])
+          .map(toEpisodeDTO)
+          .filter(Boolean) as UiEpisode[];
+        list.sort((a, b) => (a.publishDateISO > b.publishDateISO ? -1 : 1));
+        setEpisodes(list);
+      } else {
+        console.error("Episodes load failed:", epsRes.reason);
+        setEpisodesError(
+          epsRes.reason instanceof Error
+            ? epsRes.reason.message
+            : "Failed to load episodes."
+        );
+      }
+
+      setLoading(false);
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [podcastId]);
+
+  const title = podcast?.title ?? "Podcast Detail";
+  const count = episodes.length;
+  const showNoEpisodes = !loading && !episodesError && count === 0;
 
   return (
     <Container as="section" className="podcast-detail">
       <header className="podcast-detail__header">
-        <h2 className="podcast-detail__title">Podcast Detail</h2>
-        <CounterBadge count={0} title="Episodes count (placeholder)" />
+        <h2 className="podcast-detail__title">{title}</h2>
+        {loading ? (
+          <LoadingSpinner ariaLabel="Loading episodes" />
+        ) : (
+          <ItemsIndicator count={count} singular="episode" plural="episodes" />
+        )}
       </header>
+
+      {metaError && !podcast && (
+        <div role="alert" className="podcast-detail__error">
+          {metaError} &nbsp;<a href="/error">Details</a>
+        </div>
+      )}
 
       <div className="podcast-detail__content">
         <aside className="podcast-detail__sidebar">
-          <div className="podcast-detail__cover" aria-hidden="true" />
+          <div className="podcast-detail__cover-wrap">
+            {podcast?.image ? (
+              <img
+                src={podcast.image}
+                alt={`${podcast.title} cover`}
+                className="podcast-detail__cover"
+              />
+            ) : (
+              <div
+                className="podcast-detail__cover --placeholder"
+                aria-hidden="true"
+              />
+            )}
+          </div>
           <div className="podcast-detail__meta">
-            <p>
-              <strong>ID:</strong> {podcastId}
+            <p className="podcast-detail__meta-title">
+              <strong>{podcast?.title ?? "(unknown)"}</strong>
             </p>
-            <p>
-              <strong>Title:</strong> (placeholder)
+            <p className="podcast-detail__meta-author">
+              by {podcast?.author ?? "(unknown)"}
             </p>
-            <p>
-              <strong>Author:</strong> (placeholder)
-            </p>
-            <p className="podcast-detail__description">
-              (Podcast short description placeholder)
-            </p>
+            {podcast?.summary && (
+              <p className="podcast-detail__description">{podcast.summary}</p>
+            )}
           </div>
         </aside>
 
         <section className="podcast-detail__main">
-          <div className="podcast-detail__episodes">
-            <h3>Episodes</h3>
-            <p>(Episodes list/table placeholder)</p>
-          </div>
+          {loading ? (
+            <div className="podcast-detail__loading">
+              <LoadingSpinner ariaLabel="Loading episodes" />
+            </div>
+          ) : (
+            <div className="podcast-detail__episodes">
+              {episodesError && (
+                <div role="alert" className="podcast-detail__error">
+                  {episodesError} &nbsp;<a href="/error">Details</a>
+                </div>
+              )}
+
+              {showNoEpisodes ? (
+                <p>No episodes found.</p>
+              ) : (
+                <ul className="podcast-detail__episodes-list">
+                  {episodes.map((ep) => (
+                    <li key={ep.id}>
+                      <EpisodeCard
+                        id={ep.id}
+                        title={ep.title}
+                        dateISO={ep.publishDateISO}
+                        durationMs={ep.durationMs}
+                        onSelect={() =>
+                          navigate(`/podcast/${podcastId}/episode/${ep.id}`)
+                        }
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </section>
       </div>
     </Container>

@@ -1,0 +1,11 @@
+/* src/app/ui/pages/ErrorPage/ErrorPage.css */
+.error-page {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+.error-page h2 {
+  margin: 0 0 0.5rem;
+}
+.error-page p {
+  color: #555;
+}
